@@ -1,0 +1,26 @@
+{
+	"devDependencies": {
+		"@vitejs/plugin-vue": "^6.0.3",
+		"@vue/tsconfig": "^0.8.1",
+		"typescript": "^5.9.3",
+		"vite": "^7.3.0"
+	},
+	"name": "my-scroller",
+	"version": "1.0.0",
+	"main": "index.js",
+	"type": "module",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"dev": "vite",
+		"build": "vite build",
+		"serve": "vite preview"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"description": "",
+	"dependencies": {
+		"normalize.css": "^8.0.1",
+		"vue": "^3.5.26"
+	}
+}
