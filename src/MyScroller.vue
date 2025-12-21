@@ -1,6 +1,10 @@
 <template>
-  <div class="wrapper" @scroll.prevent="debouncedScrollHandler">
-    <button class="fixed-btn" @click="addItems">add</button>
+  <div class="wrapper" ref="wrapper" @scroll.prevent="debouncedScrollHandler">
+    <div class="fixed-btn">
+      <button @click="addItems">add</button>
+      <button @click="scrollTo(20)">scroll to 20</button>
+      <button @click="scrollToIndex(50)">scroll to index 50</button>
+    </div>
     <div class="phatom-scroller" :style="{ height: totalHeight + 'px' }" ></div>
     <div class="list-wrapper" :style="{ transform: `translateY(${listWrapperTransformY}px)` }">
       <SimpleItem
@@ -10,18 +14,18 @@
           {{ data }}
         </template>
       </SimpleItem>
-      <!-- <div v-if="isLoading" class="loading-wrapper">
+      <div v-if="isLoading" class="loading-wrapper">
         <div class="loading"></div>
-      </div> -->
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { debounce } from './utils/debounce';
-// import ScrollerItem from './ScrollerItem.vue';
-import SimpleItem from './SimpleItem.vue';
+import { nextTick, ref } from 'vue'
+import { debounce } from './utils/debounce'
+// import ScrollerItem from './ScrollerItem.vue'
+import SimpleItem from './SimpleItem.vue'
 const props = defineProps({
   itemHeight: {
     type: Number,
@@ -35,53 +39,80 @@ const props = defineProps({
     type: Number,
     default: 2
   },
-});
+  bottomThreshold: {
+    type: Number,
+    default: 100
+  },
+})
+
+const emits = defineEmits<{
+  (e: 'load-more'): void
+}>()
 
 const totalHeight = ref(0)
 const bufferViewLines = ref(0)
-const viewCount = Math.ceil(window.innerHeight / props.itemHeight);
-// console.log('viewCount', viewCount);
+const viewCount = Math.ceil(window.innerHeight / props.itemHeight)
+// console.log('viewCount', viewCount)
 if (props.itemHeight) {
-  bufferViewLines.value = viewCount + props.bufferLines;
-  // console.log('bufferViewLines', bufferViewLines.value);
+  bufferViewLines.value = viewCount + props.bufferLines
+  // console.log('bufferViewLines', bufferViewLines.value)
 }
+const wrapper = ref<HTMLElement | null>(null)
 
 
-const datas = ref(Array.from({ length: 100 }).map((_, i) => `Item ${i + 1}`));
+const datas = ref(Array.from({ length: 100 }).map((_, i) => `Item ${i + 1}`))
 
 const showDatas = ref<string[]>([])
 if (datas.value.length) {
-  showDatas.value = datas.value.slice(0, bufferViewLines.value * props.lineItemCounts);
+  showDatas.value = datas.value.slice(0, bufferViewLines.value * props.lineItemCounts)
 
   totalHeight.value = Math.ceil(datas.value.length / props.lineItemCounts * props.itemHeight)
 }
-const listWrapperTransformY = ref(0);
+const listWrapperTransformY = ref(0)
 
 
-// const isLoading = ref(false);
+const isLoading = ref(false)
 
 function addItems() {
-  // isLoading.value = true;
-  // setTimeout(() => {
-    const currentLength = datas.value.length;
-    const newItems = Array.from({ length: 10 }).map((_, i) => `Item ${currentLength + i + 1}`);
-    datas.value.push(...newItems);
-    // isLoading.value = false;
+  isLoading.value = true
+  setTimeout(() => {
+    const currentLength = datas.value.length
+    const newItems = Array.from({ length: 10 }).map((_, i) => `Item ${currentLength + i + 1}`)
+    datas.value.push(...newItems)
+    isLoading.value = false
     totalHeight.value = Math.ceil(datas.value.length / props.lineItemCounts * props.itemHeight)
-    console.log('new totalHeight', totalHeight.value);
-  // }, 1000);
+    // rerender
+    const scrollTop = listWrapperTransformY.value
+    renderByScrollTop(scrollTop)
+    // console.log('new totalHeight', totalHeight.value)
+    showDatas
+  }, 1000)
 }
 
 function handleScroll(event: Event) {
-  // console.log('scroll event fired');
-  const target = event.target as HTMLElement;
-  const scrollTop = target.scrollTop;
+  // console.log('scroll event fired')
+  const target = event.target as HTMLElement
+  const scrollTop = target.scrollTop
 
-  let startLine = Math.floor(scrollTop / props.itemHeight);
+  renderByScrollTop(scrollTop)
+
+  // 判断是否接近底部，触发加载更多
+  nextTick(() => {
+    if (judgeShouldLoadMore()) {
+      // addItems()
+      isLoading.value = true
+      emits('load-more')
+    }
+  })
+}
+
+function renderByScrollTop(scrollTop: number) {
+
+  let startLine = Math.floor(scrollTop / props.itemHeight)
   if (startLine === 0) {
-    showDatas.value = datas.value.slice(0, bufferViewLines.value * props.lineItemCounts);
+    showDatas.value = datas.value.slice(0, bufferViewLines.value * props.lineItemCounts)
     listWrapperTransformY.value = 0
-    return;
+    return
   }
   const deltaLines = startLine - props.bufferLines
   startLine = Math.max(0, deltaLines)
@@ -95,7 +126,42 @@ function handleScroll(event: Event) {
   }
 }
 
-const debouncedScrollHandler = debounce(handleScroll, 10);
+const debouncedScrollHandler = debounce(handleScroll, 10)
+
+function judgeShouldLoadMore() {
+  if (isLoading.value) return false
+  const scrollTop = wrapper.value?.scrollTop || 0
+  const scrollHeight = wrapper.value?.scrollHeight || 0
+  const clientHeight = wrapper.value?.clientHeight || 0
+  if (scrollHeight - (scrollTop + clientHeight) < props.bottomThreshold) {
+    return true
+  }
+  return false
+}
+
+function scrollTo(scrollTop: number) {
+  if (wrapper.value) {
+    wrapper.value.scrollTop = scrollTop
+    renderByScrollTop(scrollTop)
+  }
+}
+function scrollToIndex(index: number) {
+  const scrollTop = Math.floor(index / props.lineItemCounts) * props.itemHeight
+  scrollTo(scrollTop)
+}
+
+function completeLoading() {
+  isLoading.value = false
+  // rerender
+  const scrollTop = wrapper.value?.scrollTop || 0
+  renderByScrollTop(scrollTop)
+}
+
+defineExpose({
+  scrollTo,
+  scrollToIndex,
+  completeLoading,
+})
 </script>
 
 <style scoped>
@@ -141,6 +207,9 @@ const debouncedScrollHandler = debounce(handleScroll, 10);
   top: 20px;
   right: 20px;
   z-index: 20;
+
+  display: flex;
+  flex-direction: column;
 }
 .loading-wrapper {
   display: flex;
