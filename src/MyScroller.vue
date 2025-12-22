@@ -1,11 +1,24 @@
 <template>
   <div class="wrapper" ref="wrapper" @scroll.prevent="debouncedScrollHandler">
+    <div class="header-wrapper" ref="headerWrapper">
+      <slot name="header">
+        <!-- <div v-if="showTmp"> -->
+        <div>aaa</div>
+        <div>bbb</div>
+        <div>ccc</div>
+        <div>ccc</div>
+        <div>ccc</div>
+        <div>ccc</div>
+        <!-- </div> -->
+        <!-- <div style="height: 100px" v-if="showTmp">asdf</div> -->
+      </slot>
+    </div>
     <div class="fixed-btn">
       <button @click="addItems">add</button>
       <button @click="scrollTo(20)">scroll to 20</button>
       <button @click="scrollToIndex(50)">scroll to index 50</button>
     </div>
-    <div class="phatom-scroller" :style="{ height: totalHeight + 'px' }" ></div>
+    <div class="phatom-scroller" :style="{ height: totalHeight + headerHeight + 'px' }" ></div>
     <div class="list-wrapper" :style="{ transform: `translateY(${listWrapperTransformY}px)` }">
       <SimpleItem
         v-for="(item, index) in showDatas" :key="item" class="list-item"
@@ -22,7 +35,7 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, ref } from 'vue'
+import { nextTick, ref, onMounted, onUnmounted } from 'vue'
 import { debounce } from './utils/debounce'
 // import ScrollerItem from './ScrollerItem.vue'
 import SimpleItem from './SimpleItem.vue'
@@ -33,7 +46,7 @@ const props = defineProps({
   },
   bufferLines: {
     type: Number,
-    default: 2
+    default: 1
   },
   lineItemCounts: {
     type: Number,
@@ -107,9 +120,14 @@ function handleScroll(event: Event) {
 }
 
 function renderByScrollTop(scrollTop: number) {
-
-  let startLine = Math.floor(scrollTop / props.itemHeight)
-  if (startLine === 0) {
+  if (scrollTop < headerHeight.value) {
+    showDatas.value = datas.value.slice(0, bufferViewLines.value * props.lineItemCounts)
+    listWrapperTransformY.value = 0
+    return
+  }
+  const _scrollTop = Math.max(0, scrollTop - headerHeight.value)
+  let startLine = Math.floor(_scrollTop / props.itemHeight)
+  if (startLine <= 0) {
     showDatas.value = datas.value.slice(0, bufferViewLines.value * props.lineItemCounts)
     listWrapperTransformY.value = 0
     return
@@ -156,6 +174,30 @@ function completeLoading() {
   const scrollTop = wrapper.value?.scrollTop || 0
   renderByScrollTop(scrollTop)
 }
+
+const headerWrapper = ref<HTMLElement | null>(null)
+const headerHeight = ref(0)
+const headerObserver = new ResizeObserver((enties) => {
+  for (const entry of enties) {
+    const newHeight = entry.contentRect.height
+    if (newHeight !== headerHeight.value) {
+      headerHeight.value = newHeight
+      renderByScrollTop(wrapper.value?.scrollTop || 0)
+    }
+  }
+})
+// const showTmp = ref(false)
+onMounted(() => {
+  if (headerWrapper.value && wrapper.value) {
+    headerObserver.observe(headerWrapper.value)
+  }
+  // setTimeout(() => {
+  //   showTmp.value = true
+  // }, 1e3)
+})
+onUnmounted(() => {
+  headerObserver.disconnect()
+})
 
 defineExpose({
   scrollTo,
