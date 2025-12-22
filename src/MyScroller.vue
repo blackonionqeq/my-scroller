@@ -16,7 +16,7 @@
     <div class="fixed-btn">
       <button @click="addItems">add</button>
       <button @click="scrollTo(100)">scroll to 100</button>
-      <button @click="scrollToIndex(20)">scroll to index 20</button>
+      <button @click="scrollToIndex(33)">scroll to index 33</button>
     </div>
     <div class="phatom-scroller" :style="{ height: totalHeight + headerHeight + 'px' }" ></div>
     <div class="list-wrapper" :style="{ transform: `translateY(${listWrapperTransformY}px)` }">
@@ -164,7 +164,7 @@ function scrollTo(scrollTop: number) {
   }
 }
 function scrollToIndex(index: number) {
-  const scrollTop = Math.floor(Math.max(0, index - props.lineItemCounts) / props.lineItemCounts) * props.itemHeight + headerHeight.value
+  const scrollTop = Math.floor(Math.max(0, index - props.lineItemCounts + 1) / props.lineItemCounts) * props.itemHeight + headerHeight.value
   scrollTo(Math.max(0, scrollTop))
 }
 
