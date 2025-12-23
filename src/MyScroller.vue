@@ -10,7 +10,6 @@
         <div>ccc</div>
         <div>ccc</div>
         <!-- </div> -->
-        <!-- <div style="height: 100px" v-if="showTmp">asdf</div> -->
       </slot>
     </div>
     <div class="fixed-btn">
@@ -168,12 +167,15 @@ function scrollToIndex(index: number) {
   scrollTo(Math.max(0, scrollTop))
 }
 
-function completeLoading() {
+function completeLoading(isComplete = true) {
   isLoading.value = false
   // rerender
-  const scrollTop = wrapper.value?.scrollTop || 0
-  renderByScrollTop(scrollTop)
+  if (isComplete) {
+    const scrollTop = wrapper.value?.scrollTop || 0
+    renderByScrollTop(scrollTop)
+  }
 }
+
 
 const headerWrapper = ref<HTMLElement | null>(null)
 const headerHeight = ref(0)
