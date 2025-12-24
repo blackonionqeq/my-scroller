@@ -1,6 +1,6 @@
 <template>
-  <div class="p2r-wrapper">
-    <div class="p2r-ptr" ref="ptr" :style="{ transform: `translateY(${prefixHeight}px)` }">
+  <div class="p2r-wrapper" @touchstart="handleTouchStart" @touchmove="handleTouchMove" @touchend="handleTouchEnd">
+    <div class="p2r-ptr" ref="ptr" :style="{ transform: `translateY(${prefixHeight + pullDistance}px)` }">
       <slot name="ptr">
         <div v-if="status !== 'refreshing'"
           class="p2r-ptr-icon" :class="{rotate180: status === 'release'}">  
@@ -12,7 +12,7 @@
         <div class="p2r-ptr-text" v-else-if="status === 'refreshing'">{{ refreshingText }}</div>
       </slot>
     </div>
-    <div class="p2r-content" ref="content">
+    <div class="p2r-content" ref="content" :style="{ transform: `translateY(${pullDistance}px)` }">
       <slot>
         Content goes here
       </slot>
@@ -46,6 +46,10 @@ const props = defineProps({
   },
 })
 
+const emit = defineEmits<{
+  (e: 'refresh'): void
+}>()
+
 const status = ref<'pull' | 'release' | 'refreshing' | null>(null)
 
 const prefixHeight = ref(0)
@@ -55,6 +59,59 @@ onMounted(() => {
     prefixHeight.value = -ptr.value.offsetHeight - 12
   }
 })
+const content = ref<HTMLElement | null>(null)
+const pullDistance = ref(0)
+
+let startY = 0
+let isTouching = false
+function handleTouchStart(event: TouchEvent) {
+  // console.log('handleTouchStart', status.value)
+  if (status.value === 'refreshing') return
+  // if ((event.target as HTMLElement).closest('.p2r-content') && (event.target as HTMLElement).closest('.p2r-content')!.scrollTop === 0) {
+  if (content.value && content.value.scrollTop === 0) {
+    isTouching = true
+    startY = event.touches[0].clientY
+    status.value = 'pull'
+    // console.log('touch start')
+  }
+}
+function handleTouchMove(event: TouchEvent) {
+  event.preventDefault()
+  if (!isTouching || status.value === 'refreshing') return
+  const currentY = event.touches[0].clientY
+  const diffY = currentY - startY
+  // console.log('handleTouchMove', diffY)
+  if (diffY > 0) {
+    // event.preventDefault()
+    pullDistance.value = diffY
+    // prefixHeight.value = Math.min(diffY / 2 + (-ptr.value!.offsetHeight - 12), 150)
+    if (diffY >= props.refreshThreshold) {
+      status.value = 'release'
+      // console.log('release')
+    } else {
+      status.value = 'pull'
+      // console.log('pull')
+    }
+  }
+}
+
+function handleTouchEnd() {
+  if (!isTouching) return
+  isTouching = false
+  if (status.value === 'release') {
+    status.value = 'refreshing'
+    // console.log('refreshing')
+    pullDistance.value = props.refreshThreshold
+    // Simulate refresh action
+    setTimeout(() => {
+      pullDistance.value = 0
+      status.value = null
+    }, 2000)
+  } else {
+    pullDistance.value = 0
+    status.value = null
+  }
+}
 </script>
 
 <style scoped>

@@ -1,11 +1,17 @@
 <template>
   <div class="my-scroller-wrapper">
-    <MyScroller class="my-scroller" />
+    <!-- <MyScroller class="my-scroller" /> -->
+    <PullToRefreshWrapper class="my-scroller">
+      <div v-for="i in 30" :key="i" style="padding: 16px; border-bottom: 1px solid #ccc;">
+        Item {{ i }}
+      </div>
+    </PullToRefreshWrapper>
   </div>
 </template>
 
 <script setup>
-import MyScroller from './MyScroller.vue';
+// import MyScroller from './MyScroller.vue';
+import PullToRefreshWrapper from './PullToRefreshWrapper.vue'
 </script>
 
 <style>
@@ -20,6 +26,6 @@ html[theme="dark"]{
 }
 .my-scroller {
   height: fit-content;
-  max-height: 100%;
+  max-height: 100vh;
 }
 </style>
