@@ -62,9 +62,11 @@ const currentY = ref(0)
 let isDragging = false
 const isHorizontalDragging = ref(false)
 const currentTransformX = ref(0)
+const tmpTransformX = ref(0)
 const handleTouchStart = (event: TouchEvent) => {
   startX.value = event.touches[0].clientX
   startY.value = event.touches[0].clientY
+  tmpTransformX.value = currentTransformX.value
   // isDragging = true
   // Handle touch start event
 }
@@ -91,7 +93,7 @@ const handleTouchMove = (event: TouchEvent) => {
 
     // Handle touch move event
     const deltaX = currentX.value - startX.value
-    currentTransformX.value = deltaX
+    currentTransformX.value = tmpTransformX.value + deltaX
     // currentTransformX.value = -props.current * itemWidth.value + deltaX
   }
 }
@@ -99,7 +101,9 @@ const handleTouchEnd = (event: TouchEvent) => {
   // Handle touch end event
   isDragging = false
   isHorizontalDragging.value = false
-  if (Math.abs(currentX.value - startX.value) > props.threshold) {
+  const deltaX = currentX.value - startX.value
+  console.log('Delta X:', deltaX)
+  if (Math.abs(deltaX) > props.threshold) {
     if (currentX.value < startX.value) {
       console.log('Swiped Left')
       emit('update:current', props.current + 1)
@@ -121,6 +125,7 @@ watch(
   () => selfCurrent.value,
   (newVal) => {
     if (isInitialized.value) {
+      console.log('Animating to Current Item Index:', newVal)
       // currentTransformX.value = -newVal * itemWidth.value
       animateToCurrentItem()
     }
@@ -132,6 +137,8 @@ function animateToCurrentItem() {
   // use request animationFrame for smooth animation
   const targetX = -selfCurrent.value * itemWidth.value
   const initialX = currentTransformX.value
+  console.log('currentTransformX before animation:', currentTransformX.value)
+  console.log('Animating to targetX:', targetX)
   const deltaX = targetX - initialX
   const startTime = performance.now()
   function animate(time: number) {
