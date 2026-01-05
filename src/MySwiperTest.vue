@@ -1,7 +1,7 @@
 <template>
   <div class="swiper-test">
     <MySwiper v-model:current="current">
-      <MySwiperItemWrapper v-for="n in 3" :key="n-1" :index="n-1" />
+      <MySwiperItemWrapper v-for="n in 5" :key="n-1" :index="n-1" />
     </MySwiper>
   </div>
 </template>
