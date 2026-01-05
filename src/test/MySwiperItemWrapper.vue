@@ -1,6 +1,6 @@
 <template>
-  <MySwiperItem v-bind="$attrs" :index v-show="shouldRender">
-    <div class="item-content">
+  <MySwiperItem v-bind="$attrs" :index>
+    <div class="item-content" v-show="shouldRender">
       <h3>Swiper Item</h3>
       <p>This is a swiper item content.</p>
       <div>index is {{ props.index }}</div>
