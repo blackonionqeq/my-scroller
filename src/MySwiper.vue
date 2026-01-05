@@ -93,6 +93,15 @@ const handleTouchMove = (event: TouchEvent) => {
 
     // Handle touch move event
     const deltaX = currentX.value - startX.value
+    if (props.current === 0 && deltaX > 0) {
+      // At first item, prevent dragging right
+      // currentTransformX.value = tmpTransformX.value + deltaX / 3
+      return
+    } else if (props.current === (wrapper.value?.children.length || 1) - 1 && deltaX < 0) {
+      // At last item, prevent dragging left
+      // currentTransformX.value = tmpTransformX.value + deltaX / 3
+      return
+    }
     currentTransformX.value = tmpTransformX.value + deltaX
     // currentTransformX.value = -props.current * itemWidth.value + deltaX
   }
@@ -106,11 +115,16 @@ const handleTouchEnd = (event: TouchEvent) => {
   if (Math.abs(deltaX) > props.threshold) {
     if (currentX.value < startX.value) {
       console.log('Swiped Left')
-      emit('update:current', props.current + 1)
+      const maxIndex = (wrapper.value?.children.length || 1) - 1
+      if (props.current < maxIndex) {
+        emit('update:current', props.current + 1)
+      }
       // start transition to next item
     } else {
       console.log('Swiped Right')
-      emit('update:current', props.current - 1)
+      if (props.current > 0) {
+        emit('update:current', props.current - 1)
+      }
       // start transition to previous item
     }
   } else {
