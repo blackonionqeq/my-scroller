@@ -27,6 +27,10 @@ const props = defineProps({
   duration: {
     type: Number,
     default: 300
+  },
+  isLTR: {
+    type: Boolean,
+    default: true
   }
 })
 
@@ -93,14 +97,28 @@ const handleTouchMove = (event: TouchEvent) => {
 
     // Handle touch move event
     const deltaX = currentX.value - startX.value
-    if (props.current === 0 && deltaX > 0) {
+    if (props.current === 0) {
+      if (props.isLTR && deltaX > 0) {
+        // At first item, prevent dragging right
+        return
+      } else if (!props.isLTR && deltaX < 0) {
+        // At first item in RTL, prevent dragging left
+        return
+      }
       // At first item, prevent dragging right
       // currentTransformX.value = tmpTransformX.value + deltaX / 3
-      return
-    } else if (props.current === (wrapper.value?.children.length || 1) - 1 && deltaX < 0) {
+      // return
+    } else if (props.current === (wrapper.value?.children.length || 1) - 1) {
+      if (props.isLTR && deltaX < 0) {
+        // At last item, prevent dragging left
+        return
+      } else if (!props.isLTR && deltaX > 0) {
+        // At last item in RTL, prevent dragging right
+        return
+      }
       // At last item, prevent dragging left
       // currentTransformX.value = tmpTransformX.value + deltaX / 3
-      return
+      // return
     }
     currentTransformX.value = tmpTransformX.value + deltaX
     // currentTransformX.value = -props.current * itemWidth.value + deltaX
@@ -114,18 +132,27 @@ const handleTouchEnd = (event: TouchEvent) => {
   console.log('Delta X:', deltaX)
   if (Math.abs(deltaX) > props.threshold) {
     if (currentX.value < startX.value) {
-      console.log('Swiped Left')
-      const maxIndex = (wrapper.value?.children.length || 1) - 1
-      if (props.current < maxIndex) {
-        emit('update:current', props.current + 1)
+      if (props.isLTR) {
+        const maxIndex = (wrapper.value?.children.length || 1) - 1
+        if (props.current < maxIndex) {
+          emit('update:current', props.current + 1)
+        }
+      } else {
+        if (props.current > 0) {
+          emit('update:current', props.current - 1)
+        }
       }
-      // start transition to next item
     } else {
-      console.log('Swiped Right')
-      if (props.current > 0) {
-        emit('update:current', props.current - 1)
+      if (props.isLTR) {
+        if (props.current > 0) {
+          emit('update:current', props.current - 1)
+        }
+      } else {
+        const maxIndex = (wrapper.value?.children.length || 1) - 1
+        if (props.current < maxIndex) {
+          emit('update:current', props.current + 1)
+        }
       }
-      // start transition to previous item
     }
   } else {
     console.log('Swipe too short, stay on current item')
@@ -149,7 +176,7 @@ watch(
 function animateToCurrentItem() {
   // currentTransformX.value = -selfCurrent.value * itemWidth.value
   // use request animationFrame for smooth animation
-  const targetX = -selfCurrent.value * itemWidth.value
+  const targetX = props.isLTR ? -selfCurrent.value * itemWidth.value : selfCurrent.value * itemWidth.value
   const initialX = currentTransformX.value
   console.log('currentTransformX before animation:', currentTransformX.value)
   console.log('Animating to targetX:', targetX)

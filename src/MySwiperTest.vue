@@ -1,6 +1,6 @@
 <template>
   <div class="swiper-test">
-    <MySwiper v-model:current="current">
+    <MySwiper v-model:current="current" v-bind="$attrs">
       <MySwiperItemWrapper v-for="n in 5" :key="n-1" :index="n-1" />
     </MySwiper>
   </div>
