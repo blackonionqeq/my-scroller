@@ -78,11 +78,11 @@ function handleTouchStart(event: TouchEvent) {
   if (status.value === 'refreshing') return
   // if ((event.target as HTMLElement).closest('.p2r-content') && (event.target as HTMLElement).closest('.p2r-content')!.scrollTop === 0) {
   if (content.value) {
-    isTouching = true
     if (content.value.scrollTop > 0) {
       return
       // downScrollTop = content.value.scrollTop
     }
+    isTouching = true
     startY = event.touches[0].clientY
     status.value = 'pull'
     console.log('touch start')
