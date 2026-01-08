@@ -12,7 +12,7 @@
         <div class="p2r-ptr-text" v-else-if="status === 'refreshing'">{{ refreshingText }}</div>
       </slot>
     </div>
-    <div class="p2r-content" ref="content" :style="{ transform: `translateY(${pullDistance}px)` }">
+    <div class="p2r-content" ref="content" :style="{ transform: `translateY(${pullDistance}px)`, overflowY: disableScrollBehavoir ? 'hidden' : 'auto' }">
       <slot>
         Content goes here
       </slot>
@@ -21,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 const props = defineProps({
   ptrText: {
@@ -69,36 +69,30 @@ onMounted(() => {
 })
 const content = ref<HTMLElement | null>(null)
 const pullDistance = ref(0)
+const disableScrollBehavoir = computed(() => {
+  return pullDistance.value > 0
+})
 
 let startY = 0
+let tmpY = 0
 let isTouching = false
-// let downScrollTop = 0
 function handleTouchStart(event: TouchEvent) {
-  // console.log('handleTouchStart', status.value)
   if (status.value === 'refreshing') return
-  // if ((event.target as HTMLElement).closest('.p2r-content') && (event.target as HTMLElement).closest('.p2r-content')!.scrollTop === 0) {
   if (content.value) {
+    isTouching = true
     if (content.value.scrollTop > 0) {
       return
-      // downScrollTop = content.value.scrollTop
     }
-    isTouching = true
     startY = event.touches[0].clientY
     status.value = 'pull'
-    console.log('touch start')
   }
 }
 function handleTouchMove(event: TouchEvent) {
   if (!isTouching || status.value === 'refreshing') return
   const currentY = event.touches[0].clientY
   let diffY = currentY - startY
-  // if (diffY < 0) {
-  //   return
-  // }
-  // console.log('content scrollTop', content.value?.scrollTop)
   if (status.value === null) {
     if (content.value?.scrollTop > 0) {
-      console.log('content scrollTop > 0, return')
       return
     } else if (content.value?.scrollTop === 0) {
       // Trigger touch start to reset startY
@@ -106,27 +100,29 @@ function handleTouchMove(event: TouchEvent) {
       return
     }
   }
-  // event.preventDefault()
-  // console.log('diffY', diffY)
-  // console.log('handleTouchMove', diffY)
-  if (diffY > 0) {
-    // console.log('diffY', diffY)
-    // event.preventDefault()
+  if (diffY >= 0) {
     pullDistance.value = Math.min(diffY, props.maxDelta)
-    // prefixHeight.value = Math.min(diffY / 2 + (-ptr.value!.offsetHeight - 12), 150)
+    // console.log('pullDistance', pullDistance.value)
+    if (pullDistance.value === 0) {
+      tmpY = currentY
+    }
     if (diffY >= props.refreshThreshold) {
       status.value = 'release'
-      // console.log('release')
     } else {
       status.value = 'pull'
-      // console.log('pull')
     }
+  } else if (tmpY !== 0) {
+    const deltaY = currentY - tmpY
+    content.value!.scrollTop = -deltaY
+  } else if (diffY < 0) {
+    tmpY = currentY
   }
 }
 
 function handleTouchEnd() {
   if (!isTouching) return
   isTouching = false
+  tmpY = 0
   // downScrollTop = 0
   if (status.value === 'release') {
     status.value = 'refreshing'
@@ -168,8 +164,9 @@ function handleTouchEnd() {
   transition: transform 0.3s;
 }
 .p2r-content {
-  position: absolute;
-  inset: 0;
+  position: static;
+  width: 100%;
+  height: 100%;
   overflow: auto;
 }
 </style>
